@@ -48,6 +48,7 @@ class Uploader:
                         with open(f"Torrents//{file}//{base}_{ext}_part{part}.fragment", "wb") as writing_part:
                             writing_part.write(chunk)
                         writing_torrent.write(f"{base}_{ext}_part{part}.fragment {self.calculate_checksum(f"Torrents//{file}//{base}_{ext}_part{part}.fragment")}\n".encode())
+                        print(f"[{file}] is uploading: {round(part/num*100,2)} %")
                         part += 1
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                     s.connect(('localhost',6969))
@@ -60,7 +61,7 @@ class Uploader:
                             if not chunk:
                                 break
                             s.sendall(chunk)
-                    print(f"Uploaded {file} sucessfully!")
+                    print(f"[{file}] is uploaded sucessfully!")
             except FileExistsError:
                 print(f"File {file} is already uploaded!")
 
