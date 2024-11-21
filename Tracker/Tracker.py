@@ -47,9 +47,34 @@ class Tracker:
                 self.dict[file] = [(ip,port),]
             self.autosave()
             print(f"{ip}:{port} uploaded {file}!")
-        else:
-            #STILL CODING AAAAAAA
-            pass
+        elif cmd == "DOWNLOAD":
+            conn.send("OK".encode())
+            file = conn.recv(1024).decode()
+            if file in self.dict:
+                conn.send("FOUND".encode())
+                ok = conn.recv(1024).decode()
+                base, ext = file.split('.')
+                with open(f"Tracker_torrents//{base}_{ext}.torrent", "rb") as reading_torrent:
+                    while chunk := reading_torrent.read(1024):
+                        if not chunk:
+                            break
+                        conn.sendall(chunk)
+                ok = conn.recv(1024).decode()
+                for client in dict[file]:
+                    ip, port = client
+                    conn.sendall(f"ip port".encode())
+                    ok = conn.recv(1024)
+                conn.sendall("END".encode())
+            else:
+                conn.send("NOTFOUND".encode())
+        elif cmd == "ASSIGN":
+            conn.send("OK".encode())
+            file, ip, port = conn.recv(1024).decode().split(' ')
+            self.dict[file].append((ip,port))
+            self.autosave()
+            print(f"{ip}:{port} downloaded {file}!")
+        else: #Invalid connection
+            return
         
 
     def start_tracker(self):
