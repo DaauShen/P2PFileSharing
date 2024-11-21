@@ -53,12 +53,31 @@ class Client:
         try:
             self.client_socket.listen(50)
             while True:
-                conn, addr = self.client_socket.accept()
+               conn, addr = self.client_socket.accept()
+               thr = threading.Thread(target = self.thread_handling, args = [conn,])
 
+                    
         except Exception as e:
             return
             # print(f"[Error occured at client_listening()]\n{e}")
 
+    def thread_handling(self, conn):
+        msg = conn.recv(1024).decode()
+        if msg == "CHECK": #Check part avalability
+            conn.sendall("OK".encode())
+            file, part = conn.recv(1024).decode().split(' ')
+            if os.path.exists(f"Torrents//{file}//{part}"):
+                conn.sendall("FOUND")
+            else:
+                conn.sendall("NOTFOUND")
+        elif msg == "REQUEST":
+            conn.sendall("OK".encode())
+            file, part = conn.recv(1024).decode().split(' ')
+            with open(f"Torrents//{file}//{part}", "rb") as reading_part:
+                while chunk := reading_part.read(1024):
+                    if not chunk:
+                        break
+                    conn.sendall(chunk)
 
     def start_client(self):
         thr = threading.Thread(target = self.client_listening)
