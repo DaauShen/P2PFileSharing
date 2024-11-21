@@ -1,4 +1,6 @@
 import json, os, socket, threading
+from zeroconf import Zeroconf, ServiceInfo
+
 
 def torrent_path(filename):
     base, ext = filename.split('.')
@@ -6,6 +8,21 @@ def torrent_path(filename):
 
 
 class Tracker:
+    def start_mdns_server(self):
+        host_ip = socket.gethostbyname(socket.gethostname())
+        port = 6969
+        zeroconf = Zeroconf()
+        service_info = ServiceInfo(
+            "_http._tcp.local.",
+            "P2PTrackerServer._http._tcp.local.",
+            addresses=[socket.inet_aton(host_ip)],
+            port=port,
+            properties={},
+        )
+        zeroconf.register_service(service_info)
+        return host_ip, port
+
+
     def take_data(self):
         if os.path.exists("Dictionary//dict.json"):
             with open("Dictionary//dict.json", "r") as json_file:
@@ -23,11 +40,10 @@ class Tracker:
         os.makedirs("Tracker_torrents", exist_ok = True)
         
         self.tracker_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.ip = '0.0.0.0'
-        self.port = 6969
+        self.ip, self.port = self.start_mdns_server()
         self.dict = self.take_data()
         self.tracker_socket.bind((self.ip,self.port))
-        print("Tracker started at 0.0.0.0: 6969 and listening for request...")
+        print(f"Tracker started at {self.ip}:{self.port} and listening for request...")
     
     def handle_thread(self, conn):
         cmd = conn.recv(1024).decode()
