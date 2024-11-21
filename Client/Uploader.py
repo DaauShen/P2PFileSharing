@@ -1,11 +1,25 @@
 import hashlib, math, os, socket, threading
+from zeroconf import Zeroconf
+
 
 config_file = "Config//client_config.txt"
 
 class Uploader:
+    def discover_mdns_server(self):
+        zeroconf = Zeroconf()
+        service_info = zeroconf.get_service_info("_http._tcp.local.", "P2PTrackerServer._http._tcp.local.")
+        if service_info:
+            server_ip = socket.inet_ntoa(service_info.addresses[0])
+            server_port = service_info.port
+            return server_ip, server_port
+        else:
+            print("No server found.")
+            return None, None
+
     def __init__(self):
         self.uploader_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.ip, self.port = self.load_ip_port()
+        self.server_ip, self.server_port = self.discover_mdns_server()
 
     def load_ip_port(self):
         with open(config_file, "r") as file:
@@ -20,6 +34,9 @@ class Uploader:
         return hash_func.hexdigest()
     
     def start_uploader(self):
+        if not self.server_ip:
+            print("Cannot connect to tracker")
+            return
         try:
             self.uploader_socket.connect((self.ip, self.port)) #This step to make sure that uploader is called by Client
             print("Remember to put the file(s) you want to upload to the 'Uploads' folder.")
@@ -51,7 +68,7 @@ class Uploader:
                         print(f"[{file}] is uploading: {round(part/num*100,2)} %")
                         part += 1
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                    s.connect(('localhost',6969))
+                    s.connect((self.server_ip,self.server_port))
                     s.sendall("UPLOAD".encode())
                     temp = s.recv(1024).decode() #waiting
                     s.sendall((f"{file} {self.ip} {self.port}").encode())
