@@ -1,11 +1,24 @@
 import hashlib, math, os, socket, threading
+from zeroconf import Zeroconf
 
 config_file = "Config//client_config.txt"
 
 class Downloader:
+    def discover_mdns_server(self):
+        zeroconf = Zeroconf()
+        service_info = zeroconf.get_service_info("_http._tcp.local.", "P2PTrackerServer._http._tcp.local.")
+        if service_info:
+            server_ip = socket.inet_ntoa(service_info.addresses[0])
+            server_port = service_info.port
+            return server_ip, server_port
+        else:
+            print("No server found.")
+            return None, None
+
     def __init__(self):
         self.downloader_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.ip, self.port = self.load_ip_port()
+        self.server_ip, self.server_port = self.discover_mdns_server()
 
     def load_ip_port(self):
         with open(config_file, "r") as file:
@@ -20,6 +33,9 @@ class Downloader:
         return hash_func.hexdigest()
     
     def start_downloader(self):
+        if not self.server_ip:
+            print("Cannot connect to tracker")
+            return
         try:
             self.downloader_socket.connect((self.ip, self.port)) #This step to make sure that downloader is called by Client
             print("Enter the file(s) that you want to download, each separate with a single space character")
@@ -35,7 +51,7 @@ class Downloader:
         base, ext = file.split('.')
         torrent_path = f"Torrents//{file}//{base}_{ext}.torrent"
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect(('localhost',6969)) #Connect to tracker
+            s.connect((self.server_ip,self.server_port)) #Connect to tracker
             s.sendall("DOWNLOAD".encode())
             response = s.recv(1024).decode()
             if response == "NOTFOUND":
@@ -120,11 +136,11 @@ class Downloader:
                         writing_file.write(chunk)
 
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect(('localhost',6969))
+            s.connect((self.server_ip,self.server_port))
             s.sendall("ASSIGN".encode())
             ok = s.recv(1024).decode()
             s.sendall(f"{file} {self.ip} {self.port}".encode())
-            
+
 
     def download_part(self,file,part,ip,port,check):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
