@@ -1,8 +1,4 @@
-import os, random, socket, subprocess, threading
-
-def torrent_path(filename):
-    base, ext = filename.split('.')
-    return os.path.join("Torrents",filename,f"{base}_{ext}.torrent")
+import base64, json, os, random, socket, subprocess, threading
 
 config_file = "Config//client_config.txt"
 
@@ -51,34 +47,31 @@ class Client:
 
     def client_listening(self):
         try:
-            self.client_socket.listen(50)
+            self.client_socket.listen(500)
             while True:
                conn, addr = self.client_socket.accept()
                thr = threading.Thread(target = self.thread_handling, args = [conn,])
-
+               thr.start()
                     
         except Exception as e:
             return
             # print(f"[Error occured at client_listening()]\n{e}")
 
     def thread_handling(self, conn):
-        msg = conn.recv(1024).decode()
-        if msg == "CHECK": #Check part avalability
-            conn.sendall("OK".encode())
-            file, part = conn.recv(1024).decode().split(' ')
+        cmd = conn.recv(1024).decode('utf-8')
+        if cmd == "CHECK":
+            file, part = conn.recv(1024).decode('utf-8').split(' ')
             if os.path.exists(f"Torrents//{file}//{part}"):
-                conn.sendall("FOUND")
+                conn.sendall("EXIST".encode('utf-8'))
             else:
-                conn.sendall("NOTFOUND")
-        elif msg == "REQUEST":
-            conn.sendall("OK".encode())
-            file, part = conn.recv(1024).decode().split(' ')
-            with open(f"Torrents//{file}//{part}", "rb") as reading_part:
-                while chunk := reading_part.read(1024):
-                    if not chunk:
-                        break
-                    conn.sendall(chunk)
-
+                conn.sendall("NOTEXIST".encode('utf-8'))
+        elif cmd == "DOWNLOAD":
+            file, part = conn.recv(1024).decode('utf-8').split(' ')
+            with open(f"Torrents//{file}//{part}", "r") as reading_part:
+                data = json.load(reading_part)
+            conn.sendall(json.dumps(data).encode('utf-8'))
+        else:
+           pass
     def start_client(self):
         thr = threading.Thread(target = self.client_listening)
         thr.start()
