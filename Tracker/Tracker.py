@@ -1,28 +1,7 @@
-import json, os, socket, threading
+import base64, json, os, socket, threading, time
 from zeroconf import Zeroconf, ServiceInfo
 
-
-def torrent_path(filename):
-    base, ext = filename.split('.')
-    return os.path.join("Tracker_torrents",filename,f"{base}_{ext}.torrent")
-
-
 class Tracker:
-    def start_mdns_server(self):
-        host_ip = socket.gethostbyname(socket.gethostname())
-        port = 6969
-        zeroconf = Zeroconf()
-        service_info = ServiceInfo(
-            "_http._tcp.local.",
-            "P2PTrackerServer._http._tcp.local.",
-            addresses=[socket.inet_aton(host_ip)],
-            port=port,
-            properties={},
-        )
-        zeroconf.register_service(service_info)
-        return host_ip, port
-
-
     def take_data(self):
         if os.path.exists("Dictionary//dict.json"):
             with open("Dictionary//dict.json", "r") as json_file:
@@ -35,67 +14,34 @@ class Tracker:
         with open("Dictionary//dict.json", "w") as json_file:
             json.dump(self.dict, json_file, indent=4)
 
+    def start_mdns_server(self):
+        host_ip = socket.gethostbyname(socket.gethostname())
+        port = 6969
+        service_info = ServiceInfo(
+            "_http._tcp.local.",
+            "P2PTrackerServer._http._tcp.local.",
+            addresses=[socket.inet_aton(host_ip)],
+            port=port,
+            properties={},
+        )
+        self.zeroconf.register_service(service_info)
+        return host_ip, port
+
     def __init__(self):
         os.makedirs("Dictionary", exist_ok = True)
         os.makedirs("Tracker_torrents", exist_ok = True)
         
+        self.zeroconf = Zeroconf()
         self.tracker_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.ip, self.port = self.start_mdns_server()
         self.dict = self.take_data()
         self.tracker_socket.bind((self.ip,self.port))
-        print(f"Tracker started at {self.ip}:{self.port} and listening for request...")
-    
-    def handle_thread(self, conn):
-        cmd = conn.recv(1024).decode()
-        if cmd == "UPLOAD":
-            conn.send("OK".encode())
-            file, ip, port = conn.recv(1024).decode().split(' ')
-            conn.send("OK".encode())
-            base, ext = file.split('.')
-            with open(f"Tracker_torrents//{base}_{ext}.torrent", "wb") as writing_torrent:
-                while chunk := conn.recv(1024):
-                    if not chunk:
-                        break
-                    writing_torrent.write(chunk)
-            if file in self.dict:
-                self.dict[file].append((ip,port))
-            else:
-                self.dict[file] = [(ip,port),]
-            self.autosave()
-            print(f"{ip}:{port} uploaded {file}!")
-        elif cmd == "DOWNLOAD":
-            conn.send("OK".encode())
-            file = conn.recv(1024).decode()
-            if file in self.dict:
-                conn.send("FOUND".encode())
-                ok = conn.recv(1024).decode()
-                base, ext = file.split('.')
-                with open(f"Tracker_torrents//{base}_{ext}.torrent", "rb") as reading_torrent:
-                    while chunk := reading_torrent.read(1024):
-                        if not chunk:
-                            break
-                        conn.sendall(chunk)
-                ok = conn.recv(1024).decode()
-                for client in dict[file]:
-                    ip, port = client
-                    conn.sendall(f"ip port".encode())
-                    ok = conn.recv(1024)
-                conn.sendall("END".encode())
-            else:
-                conn.send("NOTFOUND".encode())
-        elif cmd == "ASSIGN":
-            conn.send("OK".encode())
-            file, ip, port = conn.recv(1024).decode().split(' ')
-            self.dict[file].append((ip,port))
-            self.autosave()
-            print(f"{ip}:{port} downloaded {file}!")
-        else: #Invalid connection
-            return
-        
+        print(f"Tracker hosted at {self.ip}:{self.port}")
+        print("Listening for request...")
 
     def start_tracker(self):
         try:
-            self.tracker_socket.listen(5)
+            self.tracker_socket.listen(500)
             while True:
                 conn, addr = self.tracker_socket.accept()
                 thr = threading.Thread(target = self.handle_thread, args = [conn,])
@@ -108,6 +54,45 @@ class Tracker:
     def stop_tracker(self):
         print("Tracker is shutting down...")
         self.tracker_socket.close()
+        self.zeroconf.close()
+    
+    def handle_thread(self, conn):
+        cmd = conn.recv(1024).decode('utf-8')
+        if cmd == "UPLOAD":
+            magnetinfo = conn.recv(1024).decode('utf-8')
+            magnetinfo = json.loads(magnetinfo)
+            base, ext = magnetinfo["file"].split('.')
+            with open(f"Tracker_torrents//{base}_{ext}.torrent", "w") as writing_torrent:
+                json.dump(magnetinfo, writing_torrent, indent=4)
+            self.dict[magnetinfo["file"]] = {}
+            self.dict[magnetinfo["file"]]["seeders"] = []
+            self.dict[magnetinfo["file"]]["seeders"].append(magnetinfo["uploader"])
+            self.dict[magnetinfo["file"]]["path"] = f"Tracker_torrents//{base}_{ext}.torrent"
+            self.autosave()
+            print(f"{magnetinfo['uploader']} uploaded {magnetinfo['file']}")
+
+        elif cmd == "DOWNLOAD":
+            requirements = conn.recv(1024).decode('utf-8')
+            requirements = json.loads(requirements)
+            file = requirements["file"]
+            ip, port = requirements["downloader"]
+            if file in self.dict:
+                conn.sendall("FOUND".encode('utf-8'))
+                full_info = {}
+                full_info["list"] = self.dict[file]["seeders"]
+                with open(self.dict[file]["path"], "r") as reading_torrent:
+                    full_info["magnetinfo"] = json.load(reading_torrent)
+                time.sleep(0.5)
+                conn.sendall(json.dumps(full_info).encode('utf-8'))
+                self.dict[file]["seeders"].append((ip, port))
+                self.autosave()
+                print(f"({ip}:{port}) downloaded {file} and became a seeder.")
+            else:
+                conn.sendall("NOTFOUND".encode('utf-8'))
+                return
+        else:
+            return
+        
 
 
 if __name__ == "__main__":
