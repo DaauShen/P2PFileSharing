@@ -1,24 +1,13 @@
 import base64, json, hashlib, math, os, socket, threading, time
-from zeroconf import Zeroconf
 
 config_file = "Config//client_config.txt"
 
 class Uploader:
-    def discover_mdns_server(self):
-        zeroconf = Zeroconf()
-        service_info = zeroconf.get_service_info("_http._tcp.local.", "P2PTrackerServer._http._tcp.local.")
-        if service_info:
-            server_ip = socket.inet_ntoa(service_info.addresses[0])
-            server_port = service_info.port
-            return server_ip, server_port
-        else:
-            print("No server found.")
-            return None, None
 
     def __init__(self):
         self.uploader_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.ip, self.port = self.load_ip_port()
-        self.server_ip, self.server_port = self.discover_mdns_server()
+        self.server_ip, self.server_port = "192.168.1.100", 6969
 
     def load_ip_port(self):
         with open(config_file, "r") as file:
