@@ -56,6 +56,8 @@ class Downloader:
             fragments = magnetinfo["fragments"]
             assign_task = {}
             for fragment in fragments:
+                if os.path.exists(f"Torrents//{file}//{fragment}"):
+                    continue
                 for i in range(len(seeder_list)):
                     ip, port = seeder_list[i]
                     port = int(port)
