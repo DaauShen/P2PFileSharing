@@ -8,8 +8,7 @@ class Client:
         return random.randint(1024, 65535)  # Use ports in the dynamic range
 
     def generate_and_save_ip_port(self):
-        # Generate a local IP (127.x.x.x) and random port
-        ip = f"127.0.{random.randint(0, 255)}.{random.randint(0, 255)}"
+        ip = socket.gethostbyname(socket.gethostname())
         port = self.get_random_port()
 
         # Save the IP and port to a file
