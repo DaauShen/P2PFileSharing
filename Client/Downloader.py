@@ -48,7 +48,7 @@ class Downloader:
                 if response == "NOTFOUND":
                     print(f"File {file} not found.")
                     return
-                data = s.recv(1024).decode('utf-8')
+                data = s.recv(512*1024).decode('utf-8')
                 data = json.loads(data) 
             os.makedirs(f"Torrents//{file}", exist_ok = True)
             seeder_list = data["list"]
