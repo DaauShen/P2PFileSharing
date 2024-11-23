@@ -84,8 +84,10 @@ class Downloader:
                 thr = threading.Thread(target = self.download_fragment, args = [file, task, assign_task[task]])
                 thrs.append(thr)
             
-            for thr in thrs:
-                thr.start()
+            for i in range(len(thrs)):
+                if (i+1)%5 == 0:
+                    time.sleep(1)
+                thrs[i].start()
             
             for thr in thrs:
                 thr.join()
