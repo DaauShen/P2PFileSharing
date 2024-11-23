@@ -43,7 +43,7 @@ class Tracker:
     def handle_thread(self, conn):
         cmd = conn.recv(1024).decode('utf-8')
         if cmd == "UPLOAD":
-            magnetinfo = conn.recv(1024).decode('utf-8')
+            magnetinfo = conn.recv(512*1024).decode('utf-8')
             magnetinfo = json.loads(magnetinfo)
             base, ext = magnetinfo["file"].split('.')
             with open(f"Tracker_torrents//{base}_{ext}.torrent", "w") as writing_torrent:
