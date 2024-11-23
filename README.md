@@ -9,7 +9,7 @@ This project is a peer-to-peer file sharing program, written in Python. This pro
 This project consists of this instruction file and 2 folders: Client and Tracker.
 
 ## 1. Tracker
-Tracker acts as a server for holding magnetinfo and list of seeders of files. Tracker **MUST** run and hold in a terminal before you can do anything else. But before run Tracker, you must do little things.
+Tracker acts as a server for holding magnetinfo and list of seeders of files. Tracker **MUST** run and hold in a terminal before you can do anything else. But before run Tracker, you **MUST** do little things.
 
 ### 1.1. Setting up static IP
 **Windows**
@@ -53,3 +53,4 @@ sudo netplan apply
 ```
 ip addr
 ```
+### 1.2. Run Tracker
