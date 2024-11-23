@@ -1,5 +1,4 @@
-import base64, json, os, socket, threading, time
-from zeroconf import Zeroconf, ServiceInfo
+import json, os, socket, threading, time
 
 class Tracker:
     def take_data(self):
@@ -14,26 +13,12 @@ class Tracker:
         with open("Dictionary//dict.json", "w") as json_file:
             json.dump(self.dict, json_file, indent=4)
 
-    def start_mdns_server(self):
-        host_ip = socket.gethostbyname(socket.gethostname())
-        port = 6969
-        service_info = ServiceInfo(
-            "_http._tcp.local.",
-            "P2PTrackerServer._http._tcp.local.",
-            addresses=[socket.inet_aton(host_ip)],
-            port=port,
-            properties={},
-        )
-        self.zeroconf.register_service(service_info)
-        return host_ip, port
-
     def __init__(self):
         os.makedirs("Dictionary", exist_ok = True)
         os.makedirs("Tracker_torrents", exist_ok = True)
         
-        self.zeroconf = Zeroconf()
         self.tracker_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.ip, self.port = self.start_mdns_server()
+        self.ip, self.port = "192.168.1.100", 6969
         self.dict = self.take_data()
         self.tracker_socket.bind((self.ip,self.port))
         print(f"Tracker hosted at {self.ip}:{self.port}")
@@ -54,7 +39,6 @@ class Tracker:
     def stop_tracker(self):
         print("Tracker is shutting down...")
         self.tracker_socket.close()
-        self.zeroconf.close()
     
     def handle_thread(self, conn):
         cmd = conn.recv(1024).decode('utf-8')
@@ -84,8 +68,9 @@ class Tracker:
                     full_info["magnetinfo"] = json.load(reading_torrent)
                 time.sleep(0.5)
                 conn.sendall(json.dumps(full_info).encode('utf-8'))
-                self.dict[file]["seeders"].append((ip, port))
-                self.autosave()
+                if (ip,port) not in self.dict[file]["seeders"]:
+                    self.dict[file]["seeders"].append((ip, port))
+                    self.autosave()
                 print(f"({ip}:{port}) downloaded {file} and became a seeder.")
             else:
                 conn.sendall("NOTFOUND".encode('utf-8'))
