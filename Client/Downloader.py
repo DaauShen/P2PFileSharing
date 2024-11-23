@@ -70,6 +70,7 @@ class Downloader:
                 for i in range(len(seeder_list)):
                     ip, port = seeder_list[i]
                     port = int(port)
+                    print(f"Checking {fragment} from {ip}:{port}")
                     try:
                         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                             s.connect((ip, port))
@@ -79,6 +80,7 @@ class Downloader:
                             response = s.recv(1024).decode('utf-8')
                             if response == "EXIST":
                                 assign_task[fragment] = (ip, port)
+                                seeder_list = seeder_list[i+1:] + seeder_list[:i+1]
                                 break
                             else:
                                 continue
@@ -86,15 +88,17 @@ class Downloader:
                         continue
             
             thrs = []
+
             for task in assign_task:
                 thr = threading.Thread(target = self.download_fragment, args = [file, task, assign_task[task]])
-
+                thrs.append(thr)
+            
             for thr in thrs:
                 thr.start()
             
             for thr in thrs:
                 thr.join()
-
+            
             with open(f"Downloads//{file}", "wb") as writing_file:
                 for fragment in fragments:
                     with open(f"Torrents//{file}//{fragment}", "r") as reading_part:
