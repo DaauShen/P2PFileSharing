@@ -73,12 +73,19 @@ class Tracker:
                     full_info["magnetinfo"] = json.load(reading_torrent)
                 time.sleep(0.5)
                 conn.sendall(json.dumps(full_info).encode('utf-8'))
-                if (ip,port) not in self.dict[file]["seeders"]:
-                    self.dict[file]["seeders"].append((ip, port))
-                    self.autosave()
-                print(f"({ip}:{port}) downloaded {file} and became a seeder.")
             else:
                 conn.sendall("NOTFOUND".encode('utf-8'))
+                return
+        elif cmd == "FINISH":
+            requirements = conn.recv(1024).decode('utf-8')
+            requirements = json.loads(requirements)
+            file = requirements["file"]
+            ip, port = requirements["downloader"]
+            if (ip, port) not in self.dict[file]["seeders"]:
+                self.dict[file]["seeders"].append((ip, port))
+                self.autosave()
+                print(f"({ip}:{port}) finished downloading {file} and became a seeder.")
+            else:
                 return
         else:
             return
