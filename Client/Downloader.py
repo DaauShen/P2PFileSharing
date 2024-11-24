@@ -125,7 +125,10 @@ class Downloader:
                 with open(f"Torrents//{file}//{fragment}", "w") as writing_part:
                     json.dump(data, writing_part, indent=4)
                 print(f"[{file}] is downloading: {fragment}")
-                    
+
+            except socket.error as e:
+                print(f"Cannot connect to {seeder}, stop downloading {fragment}.")
+                break        
             except Exception as e:
                 print(f"Error occured at download_fragment({fragment}), retrying...")        
 
