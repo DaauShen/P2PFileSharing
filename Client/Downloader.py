@@ -112,21 +112,22 @@ class Downloader:
             print(f"[Error occured at download()]\n{e}")
             
     def download_fragment(self, file, fragment, seeder):
-        try:
-            ip, port = seeder
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.connect((ip, port))
-                s.sendall("DOWNLOAD".encode('utf-8'))
-                time.sleep(0.5)
-                s.sendall(f"{file} {fragment}".encode('utf-8'))
-                data = s.recv(685*1024).decode('utf-8')
-            data = json.loads(data)
-            with open(f"Torrents//{file}//{fragment}", "w") as writing_part:
-                json.dump(data, writing_part, indent=4)
-            print(f"[{file}] is downloading: {fragment}")
-                
-        except Exception as e:
-            print(f"[Error occured at download_fragment()]\n{e}")        
+        while True:
+            try:
+                ip, port = seeder
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    s.connect((ip, port))
+                    s.sendall("DOWNLOAD".encode('utf-8'))
+                    time.sleep(0.5)
+                    s.sendall(f"{file} {fragment}".encode('utf-8'))
+                    data = s.recv(685*1024).decode('utf-8')
+                data = json.loads(data)
+                with open(f"Torrents//{file}//{fragment}", "w") as writing_part:
+                    json.dump(data, writing_part, indent=4)
+                print(f"[{file}] is downloading: {fragment}")
+                    
+            except Exception as e:
+                print(f"Error occured at download_fragment({fragment}), retrying...")        
 
 if __name__ == "__main__":
     downloader = Downloader()
