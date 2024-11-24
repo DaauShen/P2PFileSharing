@@ -18,7 +18,12 @@ class Tracker:
         os.makedirs("Tracker_torrents", exist_ok = True)
         
         self.tracker_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.ip, self.port = "192.168.1.100", 6969
+        ip = socket.gethostbyname(socket.gethostname())
+        ip = ip.split('.')
+        ip[-1] = "100"
+        ip[-2] = "1"
+        self.ip = '.'.join(ip)
+        self.port = 6969
         self.dict = self.take_data()
         self.tracker_socket.bind((self.ip,self.port))
         print(f"Tracker hosted at {self.ip}:{self.port}")
