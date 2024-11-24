@@ -90,8 +90,8 @@ class Downloader:
                 thrs.append(thr)
             
             for i in range(len(thrs)):
-                # if (i+1)%5 == 0:
-                    # time.sleep(1)
+                if (i+1)%10 == 0:
+                    time.sleep(1)
                 thrs[i].start()
             
             for thr in thrs:
@@ -105,6 +105,11 @@ class Downloader:
                 
             if self.calculate_checksum(f"Downloads//{file}") == magnetinfo["checksum"]:
                 print(f"[{file}] is downloaded successfully.")
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    s.connect((self.server_ip, self.server_port))
+                    s.sendall("FINISH".encode('utf-8'))
+                    time.sleep(0.5)
+                    s.sendall(json.dumps({"file": file, "downloader": (self.ip, self.port)}).encode('utf-8'))
             else:
                 print(f"[{file}] is corrupted.")
 
