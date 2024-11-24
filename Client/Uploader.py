@@ -7,7 +7,12 @@ class Uploader:
     def __init__(self):
         self.uploader_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.ip, self.port = self.load_ip_port()
-        self.server_ip, self.server_port = "192.168.1.100", 6969
+        ip = socket.gethostbyname(socket.gethostname())
+        ip = ip.split('.')
+        ip[-1] = "100"
+        ip[-2] = "1"
+        self.server_ip = '.'.join(ip)
+        self.server_port = 6969
 
     def load_ip_port(self):
         with open(config_file, "r") as file:
