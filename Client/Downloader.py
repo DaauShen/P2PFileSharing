@@ -90,8 +90,8 @@ class Downloader:
                 thrs.append(thr)
             
             for i in range(len(thrs)):
-                if (i+1)%5 == 0:
-                    time.sleep(1)
+                # if (i+1)%5 == 0:
+                    # time.sleep(1)
                 thrs[i].start()
             
             for thr in thrs:
