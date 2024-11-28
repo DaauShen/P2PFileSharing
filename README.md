@@ -13,14 +13,17 @@ Tracker acts as a server for holding magnetinfo and list of seeders of files. Tr
 
 ### 1.1. Setting up static IP
 **Windows**
+- Open cmd, type `ipconfig`
+- Note your network information
 - Open Settings.
 - Navigate to: Network & Internet > Status > Change adapter options (in the Advanced Network Settings section).
 - Right-click on your network adapter (e.g., Ethernet or Wi-Fi) and choose Properties.
 - Select Internet Protocol Version 4 (TCP/IPv4) and click Properties.
+- The IPv4 address will have the format: aaa.bbb.ccc.ddd
 - Choose Use the following IP address and enter:
-  + IP address: 192.168.1.100
-  + Subnet mask: 255.255.255.0
-  + Default gateway: 192.168.1.1
+  + IP address: aaa.bbb.1.100 (based on your IPv4 address)
+  + Subnet mask: Based on your subnet mask
+  + Default gateway: Based on your default gateway
 - Set DNS servers:
   + Preferred: 8.8.8.8
   + Alternate: 8.8.4.4
