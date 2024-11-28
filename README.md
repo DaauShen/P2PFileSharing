@@ -43,8 +43,8 @@ Tracker acts as a server for holding magnetinfo and list of seeders of files. Tr
     ethernets:
       eth0:
         dhcp4: no
-        addresses: [192.168.1.100/24]
-        gateway4: 192.168.1.1
+        addresses: [aaa.bbb.1.100/24]
+        gateway4: (your default gateway)
         nameservers:
           addresses: [8.8.8.8, 8.8.4.4]
   ```
